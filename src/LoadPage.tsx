@@ -14,7 +14,7 @@ function Glasses() {
     if (gltf) {
       const box = new THREE.Box3().setFromObject(gltf.scene);
       const size = box.getSize(new THREE.Vector3());
-      const targetWidth = 22 / viewport.width; // Convert 60px to Three.js units
+      const targetWidth = 30 / viewport.width; // Convert 30px (half of 60px) to Three.js units
       const newScale = targetWidth / size.x;
       setScale(newScale);
 
@@ -43,7 +43,7 @@ function LoadPage() {
         boxSizing: 'border-box'
       }}>
         <Canvas>
-          <PerspectiveCamera makeDefault position={[0, 0, 0.5]} />
+          <PerspectiveCamera makeDefault position={[0, 0, 1]} />
           <ambientLight intensity={0.5} />
           <pointLight position={[10, 10, 10]} />
           <Glasses />

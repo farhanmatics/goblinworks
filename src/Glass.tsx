@@ -33,7 +33,33 @@ function Glass() {
   const [glassesPosition, setGlassesPosition] = useState<[number, number, number]>([0, 0, -5]);
   const [glassesScale, setGlassesScale] = useState<[number, number, number]>([1, 1, 1]);
   const detectorRef = useRef<any>(null);
-  const glassesRef = useRef<THREE.Object3D | null>(null);
+  const [aspectRatio, setAspectRatio] = useState<number>(1);
+  const [isVideoStarted, setIsVideoStarted] = useState<boolean>(false);
+
+  useEffect(() => {
+    const loadGlassesModel = async () => {
+      const loader = new GLTFLoader();
+      loader.load(
+        '/glass.glb',
+        (gltf) => {
+          console.log("Glasses model loaded successfully", gltf);
+          const box = new THREE.Box3().setFromObject(gltf.scene);
+          const size = box.getSize(new THREE.Vector3());
+          const newAspectRatio = size.x / size.y;
+          setAspectRatio(newAspectRatio);
+          console.log("Glasses aspect ratio:", newAspectRatio);
+        },
+        (progress) => {
+          console.log("Loading progress:", (progress.loaded / progress.total) * 100, "%");
+        },
+        (error) => {
+          console.error("Error loading glasses model:", error);
+        }
+      );
+    };
+
+    loadGlassesModel();
+  }, []);
 
   useEffect(() => {
     const startVideo = async () => {
@@ -43,6 +69,7 @@ function Glass() {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
             videoRef.current?.play();
+            setIsVideoStarted(true);
           };
         }
       } catch (err) {
@@ -55,33 +82,16 @@ function Glass() {
 
   useEffect(() => {
     const runPoseDetection = async () => {
+      if (!isVideoStarted) return;
+
       try {
         await tf.ready();
         console.log("TensorFlow.js is ready");
         detectorRef.current = await createDetector(SupportedModels.MoveNet);
         console.log("Pose detector created");
 
-        const loader = new GLTFLoader();
-        loader.load(
-          '/glass.glb',
-          (gltf) => {
-            console.log("Glasses model loaded successfully", gltf);
-            glassesRef.current = gltf.scene;
-            const box = new THREE.Box3().setFromObject(gltf.scene);
-            const size = box.getSize(new THREE.Vector3());
-            glassesRef.current.userData.aspectRatio = size.x / size.y;
-            console.log("Glasses aspect ratio:", glassesRef.current.userData.aspectRatio);
-          },
-          (progress) => {
-            console.log("Loading progress:", (progress.loaded / progress.total) * 100, "%");
-          },
-          (error) => {
-            console.error("Error loading glasses model:", error);
-          }
-        );
-
         const detect = async () => {
-          if (videoRef.current && detectorRef.current && glassesRef.current) {
+          if (videoRef.current && detectorRef.current) {
             try {
               const poses = await detectorRef.current.estimatePoses(videoRef.current);
               console.log("Detected poses:", poses);
@@ -91,9 +101,11 @@ function Glass() {
                 const nose = poses[0].keypoints[0];
 
                 if (leftEye.score > 0.5 && rightEye.score > 0.5 && nose.score > 0.5) {
-                  const fixedWidth = 200; // Fixed width in pixels
-                  const glassesWidth = fixedWidth / videoRef.current.videoWidth;
-                  const glassesHeight = glassesWidth / glassesRef.current.userData.aspectRatio;
+                  const eyeDistance = Math.sqrt(
+                    Math.pow(rightEye.x - leftEye.x, 2) + Math.pow(rightEye.y - leftEye.y, 2)
+                  );
+                  const glassesWidth = eyeDistance / videoRef.current.videoWidth;
+                  const glassesHeight = glassesWidth / aspectRatio;
 
                   const centerX = (leftEye.x + rightEye.x) / 2;
                   const centerY = nose.y;
@@ -102,7 +114,7 @@ function Glass() {
                   const x = (centerX / videoRef.current.videoWidth) * 2 - 1;
                   const y = -(centerY / videoRef.current.videoHeight) * 2 + 1;
 
-                  setGlassesPosition([x, y, -1]); // Moved closer to the camera
+                  setGlassesPosition([x, y, -1]);
                   setGlassesScale([glassesWidth, glassesHeight, glassesWidth]);
                   console.log("Glasses position:", [x, y, -1]);
                   console.log("Glasses scale:", [glassesWidth, glassesHeight, glassesWidth]);
@@ -122,7 +134,7 @@ function Glass() {
     };
 
     runPoseDetection();
-  }, []);
+  }, [isVideoStarted, aspectRatio]);
 
   return (
     <div className="App" style={{ position: 'relative', width: '100vw', height: '100vh' }}>
