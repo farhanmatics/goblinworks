@@ -21,7 +21,7 @@ const Posenet: React.FC = () => {
   // Load the green dress image from the public folder
   useEffect(() => {
     const image = new Image();
-    image.src = `${process.env.PUBLIC_URL}/ash.png`;
+    image.src = `${process.env.PUBLIC_URL}/mobi.png`;
     image.onload = () => {
       setDressImage(image);
     };
