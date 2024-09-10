@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Glass from './Glass';
 import LoadPage from './LoadPage';
-import Posenet from './Posenet';
 import PoseDetectionApp from './PoseDetectionApp';
 import BodyDetection from './BodyDetection';
 import WelcomePage from './WelcomePage'; // Add this import

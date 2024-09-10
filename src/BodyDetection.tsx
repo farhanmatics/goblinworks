@@ -23,7 +23,7 @@ const BodyPixVideoWithDress: React.FC = () => {
     if (model && videoRef.current && canvasRef.current && threeCanvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      //const ctx = canvas.getContext('2d');
       const threeCanvas = threeCanvasRef.current;
 
       // Set up Three.js scene
